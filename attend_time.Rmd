@@ -1,0 +1,90 @@
+---
+title: "用户出勤时长研究"
+author: "李尚灵"
+date: "2019/08/27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message  = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+# 取消科学计数法
+options("scipen"=100, "digits"=4)
+```
+
+```{r}
+library(tidyverse)
+library(DBI)
+library(ggplot2)
+library(ggthemes)
+library(gridExtra)
+library(skimr)
+library(microbenchmark)
+
+old <- theme_get()
+
+new <- theme_set(theme_tufte() + theme(text = element_text(family = "Noto Sans CJK SC"),
+                                       legend.position = "bottom"))
+
+
+## connect 
+
+con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(),
+                      host   = "127.0.0.1",
+                      dbname = "octopus_susuan",
+                      user   = "lisl",
+                      password  = "lisl731",
+                      port     = 5432)
+
+```
+
+
+```{r base_data}
+# 暑期课基础数据读入sql
+sql1 <- read_file("summer_lesson.sql")
+df_summer = dbGetQuery(con,sql1)
+
+# 秋季课购买数据读入
+sql2 <- read_file("autumn_order.sql")
+df_autumn = dbGetQuery(con,sql2)
+
+```
+
+
+```{r}
+# rate的分布
+
+df_summer %>% 
+  filter(duration_rate > 0) %>% 
+  ggplot(aes(x = duration)) +
+  geom_density() +
+  #xlim(c(0,2)) +
+  geom_vline(xintercept = 0.7, linetype = 2) +
+  facet_wrap( ~ s_subject, nrow = 3)
+
+```
+
+```{r}
+
+# 处理出勤类型
+
+df_summer %>% 
+  mutate(is_valid = ifelse(duration_rate >= 0,1,0)) %>% 
+  group_by(user_number,s_subject,start_day) %>% 
+  mutate(num = n(), 
+         rk = row_number(lesson_begin_day), 
+         rkn = paste('n',rk,sep = '')) %>% 
+  filter(num == 10) %>% 
+  select(user_number,s_subject,start_day,rkn,is_valid) %>% 
+  spread(key = rkn , value = is_valid) %>% #view()
+  mutate(attend_type = paste(n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,sep = ''),
+         class_num = n1+n2+n3+n4+n5+n6+n7+n8+n9+n10) %>% #view()
+  left_join(df_autumn,by = c("user_number" = "bkxt_user_number","s_subject" = "s_subject")) %>% #view()
+  group_by(attend_type, s_subject) %>% 
+  summarise(u_num = n(),fenzi = sum(ifelse(is.na(num),0,1)),rate = fenzi/u_num) %>% 
+  arrange( -u_num) 
+
+```
+
