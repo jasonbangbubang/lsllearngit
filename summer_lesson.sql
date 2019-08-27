@@ -1,6 +1,7 @@
 select 
 aa.user_number,
 aa.s_subject,
+aa.start_day,
 aa.lesson_begin_day,
 aa.lesson_rank,
 aa.duration,
@@ -19,6 +20,7 @@ a.user_number,
 
 -- 课节信息
 a.course_lesson_number,
+c.start_day,
 -- 课节的顺序
 row_number() over(partition by a.user_number,a.course_number,a.class_number,a.mini_class_number order by a.begin_day) as lesson_rank,
 -- lesson 开始日期、时间
