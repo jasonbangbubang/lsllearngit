@@ -1,0 +1,54 @@
+---
+title: "用户出勤时长研究"
+author: "李尚灵"
+date: "2019/08/27"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(message  = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+
+# 取消科学计数法
+options("scipen"=100, "digits"=4)
+```
+
+```{r}
+library(tidyverse)
+library(DBI)
+library(ggplot2)
+library(ggthemes)
+library(gridExtra)
+library(skimr)
+library(microbenchmark)
+
+old <- theme_get()
+
+new <- theme_set(theme_tufte() + theme(text = element_text(family = "Noto Sans CJK SC"),
+                                       legend.position = "bottom"))
+
+
+## connect 
+
+con <- DBI::dbConnect(RPostgreSQL::PostgreSQL(),
+                      host   = "127.0.0.1",
+                      dbname = "octopus_susuan",
+                      user   = "lisl",
+                      password  = "lisl731",
+                      port     = 5432)
+
+```
+
+
+```{r base_data}
+# 暑期课基础数据读入sql
+sql1 <- read_file("summer_lesson.sql")
+df_summer = dbGetQuery(con,sql1)
+
+# 秋季课购买数据读入
+sql2 <- read_file("autumn_order.sql")
+df_autumn = dbGetQuery(con,sql2)
+
+```
+
