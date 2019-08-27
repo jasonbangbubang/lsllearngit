@@ -86,4 +86,3 @@ and c.class_name not like '%测试%'
 and c.is_del = 0
 and c.start_day >= '2019-07-01'
 )aa
-limit 10
